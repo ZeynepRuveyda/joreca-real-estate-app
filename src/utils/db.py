@@ -1,13 +1,23 @@
 import os
 import hashlib
+from pathlib import Path
 from typing import List, Dict
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 
-DB_PATH = os.environ.get("DATABASE_URL", "sqlite:////home/zeynep/Desktop/joreca/data/listings.db")
+# Use a relative path for Streamlit Cloud and local dev
+DEFAULT_SQLITE = "sqlite:///data/listings.db"
+DB_PATH = os.environ.get("DATABASE_URL", DEFAULT_SQLITE)
 
 
 def get_engine() -> Engine:
+    # Ensure data directory exists for file-based SQLite
+    if DB_PATH.startswith("sqlite") and ":memory:" not in DB_PATH:
+        data_dir = Path("data")
+        try:
+            data_dir.mkdir(parents=True, exist_ok=True)
+        except Exception:
+            pass
     return create_engine(DB_PATH, future=True)
 
 
@@ -36,7 +46,7 @@ def create_tables(engine: Engine) -> None:
 
 
 def _stable_id(row: Dict) -> str:
-    raw = f"{row.get(source,)}|{row.get(url,)}|{row.get(title,)}"
+    raw = f"{row.get('source','')}|{row.get('url','')}|{row.get('title','')}"
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()
 
 
