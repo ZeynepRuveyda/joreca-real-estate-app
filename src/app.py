@@ -1,10 +1,17 @@
 import os
+import sys
+from pathlib import Path
 import pandas as pd
 import streamlit as st
 from sqlalchemy import text
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+
+"""Ensure project root is on sys.path for Streamlit Cloud imports"""
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.utils.db import get_engine, create_tables, upsert_listings
 from src.utils.mock_data import generate_mock_rows, generate_curated_duplicates, generate_enhanced_duplicates
