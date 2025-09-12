@@ -25,6 +25,16 @@ except Exception:
     # Ignore if Streamlit already initialized page config in this environment
     pass
 
+# Widen page container on Streamlit (Cloud + local)
+st.markdown(
+    """
+    <style>
+    .block-container {max-width: 1600px; padding-left: 1rem; padding-right: 1rem;}
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 
 @st.cache_data(show_spinner=False)
 def load_data_from_db() -> pd.DataFrame:
