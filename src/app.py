@@ -19,7 +19,11 @@ from src.analysis.dedupe import mark_duplicates
 from src.analysis.diff import load_with_fingerprint, compute_differences
 
 
-st.set_page_config(page_title="Real Estate Explorer", layout="wide")
+try:
+    st.set_page_config(page_title="Real Estate Explorer", layout="wide")
+except Exception:
+    # Ignore if Streamlit already initialized page config in this environment
+    pass
 
 
 @st.cache_data(show_spinner=False)
