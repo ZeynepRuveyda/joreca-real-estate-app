@@ -25,11 +25,67 @@ except Exception:
     # Ignore if Streamlit already initialized page config in this environment
     pass
 
-# Widen page container on Streamlit (Cloud + local)
+# Mobile-responsive styling for Streamlit (Cloud + local)
 st.markdown(
     """
     <style>
-    .block-container {max-width: 1600px; padding-left: 1rem; padding-right: 1rem;}
+    .block-container {
+        max-width: 1600px; 
+        padding-left: 1rem; 
+        padding-right: 1rem;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .block-container {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        
+        /* Make sidebar more compact on mobile */
+        .css-1d391kg {
+            width: 200px !important;
+        }
+        
+        /* Adjust chart sizes for mobile */
+        .stPlotlyChart {
+            width: 100% !important;
+        }
+        
+        /* Make buttons stack better on mobile */
+        .stButton > button {
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Improve text readability on mobile */
+        .stMarkdown {
+            font-size: 14px;
+        }
+        
+        /* Make expanders more touch-friendly */
+        .streamlit-expanderHeader {
+            padding: 0.75rem;
+            font-size: 16px;
+        }
+        
+        /* Adjust data table for mobile */
+        .stDataFrame {
+            font-size: 12px;
+        }
+        
+        /* Make filters more compact */
+        .stSelectbox, .stMultiselect, .stSlider {
+            margin-bottom: 0.5rem;
+        }
+    }
+    
+    /* Tablet responsiveness */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .block-container {
+            max-width: 1200px;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -174,7 +230,7 @@ def main():
             
             with col1:
                 # Duplicates by City - Count unique duplicate groups per city
-                fig_city_dup, ax_city_dup = plt.subplots(figsize=(8, 6))
+                fig_city_dup, ax_city_dup = plt.subplots(figsize=(10, 6))
                 
                 # Group by fingerprint and get unique cities for each duplicate group
                 city_dup_counts = same_home_groups.groupby('_fingerprint')['city'].first().value_counts().head(10)
@@ -215,7 +271,7 @@ def main():
             
             with col2:
                 # Duplicates by Price Range - Count unique duplicate groups per price range
-                fig_price_dup, ax_price_dup = plt.subplots(figsize=(8, 6))
+                fig_price_dup, ax_price_dup = plt.subplots(figsize=(10, 6))
                 
                 # Get unique price data for each duplicate group (take first price from each group)
                 unique_price_data = []
@@ -313,7 +369,7 @@ def main():
             # Row 1: Price and Surface analysis
             col1, col2 = st.columns(2)
             with col1:
-                fig1, ax1 = plt.subplots(figsize=(7, 5))
+                fig1, ax1 = plt.subplots(figsize=(9, 6))
                 sns.histplot(fdf["price"].dropna(), bins=25, kde=True, color='skyblue', alpha=0.7, ax=ax1)
                 ax1.set_title(f"💰 Price Distribution ({len(fdf)} records)", fontsize=14, fontweight='bold', pad=20)
                 ax1.set_xlabel("Price (€)", fontsize=12)
@@ -322,7 +378,7 @@ def main():
                 plt.tight_layout()
                 st.pyplot(fig1, clear_figure=True)
             with col2:
-                fig2, ax2 = plt.subplots(figsize=(7, 5))
+                fig2, ax2 = plt.subplots(figsize=(9, 6))
                 sns.scatterplot(data=fdf, x="surface", y="price", hue="source", alpha=0.8, s=60, ax=ax2)
                 ax2.set_title(f"🏠 Surface vs Price by Source ({len(fdf)} records)", fontsize=14, fontweight='bold', pad=20)
                 ax2.set_xlabel("Surface (m²)", fontsize=12)
@@ -336,7 +392,7 @@ def main():
             col3, col4 = st.columns(2)
             with col3:
                 if len(fdf["city"].unique()) > 1:
-                    fig3, ax3 = plt.subplots(figsize=(7, 5))
+                    fig3, ax3 = plt.subplots(figsize=(9, 6))
                     city_counts = fdf["city"].value_counts()
                     colors = sns.color_palette("Set3", len(city_counts))
                     bars = ax3.bar(city_counts.index, city_counts.values, color=colors, alpha=0.8)
@@ -356,7 +412,7 @@ def main():
                     st.info(f"🏙️ Single city: {fdf['city'].iloc[0] if not fdf.empty else 'N/A'}")
             with col4:
                 if "agency_or_private" in fdf.columns and not fdf["agency_or_private"].isna().all():
-                    fig4, ax4 = plt.subplots(figsize=(7, 5))
+                    fig4, ax4 = plt.subplots(figsize=(9, 6))
                     sns.countplot(data=fdf, x="agency_or_private", hue="source", ax=ax4, palette="Set2")
                     ax4.set_title(f"🏢 Agency vs Private ({len(fdf)} records)", fontsize=14, fontweight='bold', pad=20)
                     ax4.set_xlabel("Type", fontsize=12)
@@ -372,7 +428,7 @@ def main():
             col5, col6 = st.columns(2)
             with col5:
                 if "rooms" in fdf.columns and not fdf["rooms"].isna().all():
-                    fig5, ax5 = plt.subplots(figsize=(7, 5))
+                    fig5, ax5 = plt.subplots(figsize=(9, 6))
                     # Convert rooms to integers and filter out invalid values
                     rooms_data = fdf["rooms"].dropna()
                     rooms_data = rooms_data[rooms_data >= 1]  # Only positive room counts
@@ -400,7 +456,7 @@ def main():
                     st.info("🚪 No rooms data available")
             with col6:
                 if "listing_type" in fdf.columns and not fdf["listing_type"].isna().all():
-                    fig6, ax6 = plt.subplots(figsize=(7, 5))
+                    fig6, ax6 = plt.subplots(figsize=(9, 6))
                     sns.countplot(data=fdf, x="listing_type", hue="source", ax=ax6, palette="viridis")
                     ax6.set_title(f"🏷️ Rent vs Sale ({len(fdf)} records)", fontsize=14, fontweight='bold', pad=20)
                     ax6.set_xlabel("Listing Type", fontsize=12)
