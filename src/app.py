@@ -94,10 +94,28 @@ st.markdown(
 
 @st.cache_data(show_spinner=False)
 def load_data_from_db() -> pd.DataFrame:
-    engine = get_engine()
-    with engine.begin() as conn:
-        df = pd.read_sql(text("SELECT * FROM listings"), conn)
-    return df
+    try:
+        engine = get_engine()
+        with engine.begin() as conn:
+            df = pd.read_sql(text("SELECT * FROM listings"), conn)
+        
+        # Clean the dataframe to prevent React serialization issues
+        if not df.empty:
+            # Convert object columns to strings
+            for col in df.columns:
+                if df[col].dtype == 'object':
+                    df[col] = df[col].astype(str)
+            
+            # Ensure numeric columns are properly typed
+            numeric_cols = ['price', 'surface', 'rooms']
+            for col in numeric_cols:
+                if col in df.columns:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        return df
+    except Exception as e:
+        st.error(f"Error loading data from database: {str(e)}")
+        return pd.DataFrame()
 
 
 def ensure_min_rows(min_rows: int = 200):
@@ -328,7 +346,39 @@ def main():
             st.info("No duplicates found in the dataset.")
 
     with st.expander("📋 Dataset", expanded=True):
-        st.dataframe(fdf.sort_values("price", na_position="last").reset_index(drop=True), use_container_width=True, hide_index=True)
+        try:
+            # Clean the dataframe for display to avoid React errors
+            display_df = fdf.copy()
+            
+            # Convert problematic columns to strings to avoid React serialization issues
+            for col in display_df.columns:
+                if display_df[col].dtype == 'object':
+                    display_df[col] = display_df[col].astype(str)
+            
+            # Sort and reset index
+            display_df = display_df.sort_values("price", na_position="last").reset_index(drop=True)
+            
+            # Limit the number of rows displayed to prevent memory issues
+            max_rows = 1000
+            if len(display_df) > max_rows:
+                st.info(f"Showing first {max_rows} rows out of {len(display_df)} total records")
+                display_df = display_df.head(max_rows)
+            
+            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            
+            # Show summary stats
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Total Records", len(fdf))
+            with col2:
+                st.metric("Unique Cities", fdf['city'].nunique() if 'city' in fdf.columns else 0)
+            with col3:
+                st.metric("Price Range", f"€{fdf['price'].min():,.0f} - €{fdf['price'].max():,.0f}" if 'price' in fdf.columns and not fdf['price'].isna().all() else "N/A")
+                
+        except Exception as e:
+            st.error(f"Error displaying data: {str(e)}")
+            st.write("Raw data preview:")
+            st.write(fdf.head(10))
 
     # Differences between sources
     with st.expander("Differences between sources", expanded=False):
