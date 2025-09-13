@@ -101,16 +101,22 @@ def load_data_from_db() -> pd.DataFrame:
         
         # Clean the dataframe to prevent React serialization issues
         if not df.empty:
-            # Convert object columns to strings
+            # Convert object columns to strings and clean problematic values
             for col in df.columns:
                 if df[col].dtype == 'object':
-                    df[col] = df[col].astype(str)
+                    # Replace None, NaN, and other problematic values
+                    df[col] = df[col].fillna('').astype(str)
+                    # Remove any remaining problematic characters
+                    df[col] = df[col].str.replace('\x00', '', regex=False)  # Remove null bytes
+                    df[col] = df[col].str.replace('\r', '', regex=False)    # Remove carriage returns
+                    df[col] = df[col].str.replace('\n', ' ', regex=False)   # Replace newlines with spaces
             
             # Ensure numeric columns are properly typed
             numeric_cols = ['price', 'surface', 'rooms']
             for col in numeric_cols:
                 if col in df.columns:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
+                    df[col] = df[col].fillna(0)  # Fill NaN with 0 for numeric columns
         
         return df
     except Exception as e:
@@ -346,6 +352,10 @@ def main():
             st.info("No duplicates found in the dataset.")
 
     with st.expander("📋 Dataset", expanded=True):
+        if fdf.empty:
+            st.warning("No data available to display.")
+            return
+        
         try:
             # Clean the dataframe for display to avoid React errors
             display_df = fdf.copy()
@@ -364,7 +374,7 @@ def main():
                 st.info(f"Showing first {max_rows} rows out of {len(display_df)} total records")
                 display_df = display_df.head(max_rows)
             
-            st.dataframe(display_df, use_container_width=True, hide_index=True)
+            st.dataframe(display_df, hide_index=True)
             
             # Show summary stats
             col1, col2, col3 = st.columns(3)
@@ -377,8 +387,15 @@ def main():
                 
         except Exception as e:
             st.error(f"Error displaying data: {str(e)}")
-            st.write("Raw data preview:")
-            st.write(fdf.head(10))
+            st.write("Raw data preview (first 10 rows):")
+            try:
+                # Try a simpler display method
+                for i, row in fdf.head(10).iterrows():
+                    st.write(f"Row {i+1}: {dict(row)}")
+            except Exception as e2:
+                st.write(f"Even simple display failed: {str(e2)}")
+                st.write("Data shape:", fdf.shape)
+                st.write("Columns:", list(fdf.columns))
 
     # Differences between sources
     with st.expander("Differences between sources", expanded=False):
