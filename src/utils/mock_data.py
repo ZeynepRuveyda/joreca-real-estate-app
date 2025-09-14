@@ -160,3 +160,76 @@ def generate_curated_duplicates(num_pairs: int = 4) -> List[Dict]:
     return pairs
 
 
+def generate_anomaly_data(total: int = 500, anomaly_ratio: float = 0.15) -> List[Dict]:
+    """Generate data with realistic anomalies for testing anomaly detection"""
+    if total <= 0:
+        return []
+    
+    normal_data = []
+    anomaly_data = []
+    
+    # Generate normal data (85%)
+    normal_count = int(total * (1 - anomaly_ratio))
+    for _ in range(normal_count):
+        normal_data.append(_random_listing(random.choice(["seloger", "leboncoin"])))
+    
+    # Generate anomaly data (15%)
+    anomaly_count = total - normal_count
+    
+    for i in range(anomaly_count):
+        anomaly_type = random.choice([
+            "price_anomaly", "missing_data", "cross_source_inconsistency", 
+            "unusual_combination", "extreme_value"
+        ])
+        
+        base_listing = _random_listing(random.choice(["seloger", "leboncoin"]))
+        
+        if anomaly_type == "price_anomaly":
+            # Extreme price for the city/property type
+            city = base_listing["city"]
+            if city == "Paris":
+                # Very low price for Paris (suspicious)
+                base_listing["price"] = random.randint(200, 800) if base_listing["listing_type"] == "rent" else random.randint(30000, 80000)
+            else:
+                # Very high price for smaller cities
+                base_listing["price"] = random.randint(5000, 8000) if base_listing["listing_type"] == "rent" else random.randint(2000000, 5000000)
+        
+        elif anomaly_type == "missing_data":
+            # Missing critical fields
+            missing_fields = random.sample(["price", "surface", "rooms", "city"], random.randint(2, 3))
+            for field in missing_fields:
+                base_listing[field] = None
+        
+        elif anomaly_type == "cross_source_inconsistency":
+            # Create inconsistent data between sources
+            base_listing["price"] = random.randint(1000000, 5000000)  # Very high price
+            base_listing["surface"] = random.randint(5, 15)  # Very small surface
+            base_listing["rooms"] = random.randint(8, 12)  # Many rooms for small surface
+        
+        elif anomaly_type == "unusual_combination":
+            # Unusual combinations
+            base_listing["property_type"] = "studio"
+            base_listing["rooms"] = random.randint(5, 8)  # Studio with many rooms
+            base_listing["surface"] = random.randint(200, 500)  # Huge studio
+        
+        elif anomaly_type == "extreme_value":
+            # Extreme values
+            if base_listing["listing_type"] == "rent":
+                base_listing["price"] = random.randint(10000, 50000)  # Extremely high rent
+            else:
+                base_listing["price"] = random.randint(10000000, 50000000)  # Extremely high sale price
+            base_listing["surface"] = random.randint(1000, 5000)  # Huge surface
+        
+        # Add some missing data to anomalies
+        if random.random() < 0.3:
+            missing_field = random.choice(["agency_or_private", "postal_code", "description"])
+            base_listing[missing_field] = None
+        
+        anomaly_data.append(base_listing)
+    
+    # Combine and shuffle
+    all_data = normal_data + anomaly_data
+    random.shuffle(all_data)
+    return all_data[:total]
+
+

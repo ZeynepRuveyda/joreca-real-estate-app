@@ -14,7 +14,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.utils.db import get_engine, create_tables, upsert_listings
-from src.utils.mock_data import generate_mock_rows, generate_curated_duplicates, generate_enhanced_duplicates
+from src.utils.mock_data import generate_mock_rows, generate_curated_duplicates, generate_enhanced_duplicates, generate_anomaly_data
 from src.analysis.dedupe import mark_duplicates
 from src.analysis.diff import load_with_fingerprint, compute_differences
 
@@ -136,11 +136,227 @@ def ensure_min_rows(min_rows: int = 200):
     st.cache_data.clear()
 
 
+# ==================== ANOMALY DETECTION FUNCTIONS ====================
+
+def detect_price_anomalies(df):
+    """Detect price anomalies using statistical methods"""
+    anomalies = []
+    
+    if df.empty or 'price' not in df.columns or 'city' not in df.columns:
+        return anomalies
+    
+    # Calculate city-based price statistics
+    city_stats = df.groupby('city')['price'].agg(['mean', 'std', 'min', 'max']).reset_index()
+    
+    for _, row in df.iterrows():
+        city = row['city']
+        price = row['price']
+        
+        if pd.isna(city) or pd.isna(price):
+            continue
+            
+        city_data = city_stats[city_stats['city'] == city]
+        if not city_data.empty:
+            city_mean = city_data['mean'].iloc[0]
+            city_std = city_data['std'].iloc[0]
+            
+            # Z-score calculation (values outside 3 standard deviations)
+            if city_std > 0:
+                z_score = abs((price - city_mean) / city_std)
+                if z_score > 3:
+                    anomalies.append({
+                        'type': 'price_anomaly',
+                        'city': city,
+                        'price': price,
+                        'expected_range': f"{city_mean-city_std:.0f} - {city_mean+city_std:.0f}",
+                        'z_score': round(z_score, 2),
+                        'title': row.get('title', 'N/A')
+                    })
+    
+    return anomalies
+
+
+def check_data_completeness(df):
+    """Check data completeness and missing field analysis"""
+    completeness_report = {}
+    
+    if df.empty:
+        return completeness_report
+    
+    # Calculate missing data percentage for each column
+    for col in df.columns:
+        missing_count = df[col].isnull().sum()
+        total_count = len(df)
+        missing_percentage = (missing_count / total_count) * 100
+        
+        completeness_report[col] = {
+            'missing_count': int(missing_count),
+            'missing_percentage': round(missing_percentage, 2),
+            'status': 'CRITICAL' if missing_percentage > 20 else 'WARNING' if missing_percentage > 5 else 'OK'
+        }
+    
+    return completeness_report
+
+
+def cross_source_validation(df):
+    """Compare data between SeLoger and LeBoncoin sources"""
+    inconsistencies = []
+    
+    if df.empty or 'source' not in df.columns or 'city' not in df.columns or 'price' not in df.columns:
+        return inconsistencies
+    
+    # Compare average prices by city between sources
+    city_price_comparison = df.groupby(['city', 'source'])['price'].agg(['mean', 'count']).reset_index()
+    
+    for city in city_price_comparison['city'].unique():
+        city_data = city_price_comparison[city_price_comparison['city'] == city]
+        
+        if len(city_data) == 2:  # Both sources available
+            seloger_data = city_data[city_data['source'] == 'seloger']
+            leboncoin_data = city_data[city_data['source'] == 'leboncoin']
+            
+            if not seloger_data.empty and not leboncoin_data.empty:
+                seloger_avg = seloger_data['mean'].iloc[0]
+                leboncoin_avg = leboncoin_data['mean'].iloc[0]
+                seloger_count = seloger_data['count'].iloc[0]
+                leboncoin_count = leboncoin_data['count'].iloc[0]
+                
+                # Check for significant price differences (>30%)
+                if seloger_avg > 0 and leboncoin_avg > 0:
+                    price_diff_percentage = abs(seloger_avg - leboncoin_avg) / max(seloger_avg, leboncoin_avg) * 100
+                    
+                    if price_diff_percentage > 30:
+                        inconsistencies.append({
+                            'type': 'price_inconsistency',
+                            'city': city,
+                            'seloger_avg': round(seloger_avg, 2),
+                            'leboncoin_avg': round(leboncoin_avg, 2),
+                            'difference_percentage': round(price_diff_percentage, 2),
+                            'seloger_count': int(seloger_count),
+                            'leboncoin_count': int(leboncoin_count)
+                        })
+    
+    return inconsistencies
+
+
+def comprehensive_anomaly_detection(df):
+    """Comprehensive anomaly detection system"""
+    if df.empty:
+        return {
+            'report': {'total_issues': 0, 'price_anomalies': 0, 'cross_source_inconsistencies': 0},
+            'critical_issues': [],
+            'price_anomalies': [],
+            'inconsistencies': [],
+            'completeness': {}
+        }
+    
+    # Run all anomaly detection checks
+    price_anomalies = detect_price_anomalies(df)
+    completeness = check_data_completeness(df)
+    inconsistencies = cross_source_validation(df)
+    
+    # Generate report
+    report = {
+        'price_anomalies': len(price_anomalies),
+        'cross_source_inconsistencies': len(inconsistencies),
+        'total_issues': len(price_anomalies) + len(inconsistencies)
+    }
+    
+    # Identify critical issues
+    critical_issues = []
+    
+    if report['price_anomalies'] > 0:
+        critical_issues.append(f"⚠️ {report['price_anomalies']} price anomalies detected")
+    
+    if report['cross_source_inconsistencies'] > 0:
+        critical_issues.append(f"⚠️ {report['cross_source_inconsistencies']} cross-source inconsistencies detected")
+    
+    # Check for critical data completeness issues
+    for field, stats in completeness.items():
+        if stats['status'] == 'CRITICAL':
+            critical_issues.append(f"🚨 {field} field has {stats['missing_percentage']:.1f}% missing data")
+        elif stats['status'] == 'WARNING':
+            critical_issues.append(f"⚠️ {field} field has {stats['missing_percentage']:.1f}% missing data")
+    
+    return {
+        'report': report,
+        'critical_issues': critical_issues,
+        'price_anomalies': price_anomalies,
+        'inconsistencies': inconsistencies,
+        'completeness': completeness
+    }
+
+
+def show_anomaly_dashboard(df):
+    """Display anomaly detection dashboard in Streamlit"""
+    with st.expander("🚨 Anomaly Detection Dashboard", expanded=False):
+        # Run anomaly detection
+        anomaly_results = comprehensive_anomaly_detection(df)
+        
+        # Summary metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Price Anomalies", anomaly_results['report']['price_anomalies'])
+        with col2:
+            st.metric("Source Inconsistencies", anomaly_results['report']['cross_source_inconsistencies'])
+        with col3:
+            st.metric("Total Issues", anomaly_results['report']['total_issues'])
+        with col4:
+            # Calculate data quality score
+            total_fields = len(anomaly_results['completeness'])
+            if total_fields > 0:
+                ok_fields = sum(1 for stats in anomaly_results['completeness'].values() if stats['status'] == 'OK')
+                quality_score = round((ok_fields / total_fields) * 100, 1)
+                st.metric("Data Quality Score", f"{quality_score}%")
+            else:
+                st.metric("Data Quality Score", "N/A")
+        
+        # Critical issues alert
+        if anomaly_results['critical_issues']:
+            st.error("🚨 Critical Issues Detected:")
+            for issue in anomaly_results['critical_issues']:
+                st.write(f"• {issue}")
+        else:
+            st.success("✅ No critical issues detected!")
+        
+        # Detailed reports
+        if anomaly_results['price_anomalies']:
+            st.subheader("🔍 Price Anomalies Details")
+            anomaly_df = pd.DataFrame(anomaly_results['price_anomalies'])
+            st.dataframe(anomaly_df[['city', 'price', 'expected_range', 'z_score', 'title']], 
+                        use_container_width=True, hide_index=True)
+        
+        if anomaly_results['inconsistencies']:
+            st.subheader("🔄 Cross-Source Inconsistencies")
+            inconsistency_df = pd.DataFrame(anomaly_results['inconsistencies'])
+            st.dataframe(inconsistency_df[['city', 'seloger_avg', 'leboncoin_avg', 'difference_percentage', 
+                                         'seloger_count', 'leboncoin_count']], 
+                        use_container_width=True, hide_index=True)
+        
+        # Data completeness report
+        if anomaly_results['completeness']:
+            st.subheader("📊 Data Completeness Report")
+            completeness_df = pd.DataFrame(anomaly_results['completeness']).T
+            completeness_df = completeness_df.sort_values('missing_percentage', ascending=False)
+            
+            # Color code the status
+            def color_status(val):
+                if val == 'CRITICAL':
+                    return 'background-color: #ffcccc'
+                elif val == 'WARNING':
+                    return 'background-color: #fff3cd'
+                else:
+                    return 'background-color: #d4edda'
+            
+            styled_df = completeness_df.style.applymap(color_status, subset=['status'])
+            st.dataframe(styled_df, use_container_width=True)
+
+
 def main():
     st.title("Real Estate Explorer (SeLoger vs Leboncoin)")
 
     # Controls
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5, col6 = st.columns(6)
     with col1:
         min_rows = st.number_input("Min rows", min_value=50, max_value=10000, value=200, step=50)
     with col2:
@@ -156,10 +372,17 @@ def main():
             st.success(f"Generated {len(rows)} records with 50% duplicates.")
         st.caption("Generate realistic data with many duplicates")
     with col4:
+        if st.button("Generate Anomaly Data"):
+            rows = generate_anomaly_data(total=500, anomaly_ratio=0.15)
+            upsert_listings(get_engine(), rows)
+            st.cache_data.clear()
+            st.success(f"Generated {len(rows)} records with 15% anomalies.")
+        st.caption("Generate data with realistic anomalies")
+    with col5:
         if st.button("Reload data"):
             st.cache_data.clear()
         st.caption("Refresh data from database")
-    with col5:
+    with col6:
         export_requested = st.button("Export diffs (Excel+CSV)")
         st.caption("Export differences between sources")
 
@@ -350,6 +573,9 @@ def main():
             
         else:
             st.info("No duplicates found in the dataset.")
+
+    # Anomaly Detection Dashboard
+    show_anomaly_dashboard(fdf)
 
     with st.expander("📋 Dataset", expanded=True):
         if fdf.empty:
