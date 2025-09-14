@@ -357,81 +357,124 @@ def main():
     
     # Code Architecture & Technical Details
     with st.expander("🔧 Code Architecture & Technical Details", expanded=False):
-        st.markdown("### **📋 Project Structure & Technologies**")
+        st.markdown("### **📚 Kullanılan Kütüphaneler ve Teknolojiler**")
         
         col1, col2 = st.columns(2)
         
         with col1:
             st.markdown("""
-            **🏗️ Architecture:**
-            - **Data Collection**: Mock data generation (simulates web scraping)
-            - **Database**: SQLite with SQLAlchemy ORM
-            - **Data Processing**: Pandas for data manipulation
-            - **Deduplication**: SHA1 fingerprinting + text normalization
-            - **Anomaly Detection**: Z-score analysis + statistical methods
-            - **Visualization**: Matplotlib + Seaborn
-            - **Web Interface**: Streamlit (responsive design)
-            - **Deployment**: Streamlit Cloud + GitHub
+            **🐍 Python Kütüphaneleri:**
+            - **Pandas**: Veri manipülasyonu ve analizi
+            - **SQLAlchemy**: Veritabanı ORM ve bağlantı yönetimi
+            - **Matplotlib + Seaborn**: Profesyonel veri görselleştirme
+            - **Streamlit**: Web arayüzü ve dashboard oluşturma
+            - **Hashlib**: SHA1 fingerprinting için güvenli hash
+            - **Pathlib**: Dosya yolu yönetimi
+            - **Random**: Mock veri üretimi
+            - **NumPy**: Sayısal hesaplamalar
             """)
         
         with col2:
             st.markdown("""
-            **💻 Key Code Patterns:**
-            - **Modular Design**: Separate modules for DB, analysis, UI
-            - **Error Handling**: Try-catch blocks for robust operation
-            - **Caching**: @st.cache_data for performance optimization
-            - **Data Validation**: Type checking and null handling
-            - **Responsive UI**: CSS media queries for mobile compatibility
-            - **Real-time Updates**: Dynamic filtering and visualization
+            **🗄️ Veritabanı ve Depolama:**
+            - **SQLite**: Hafif, dosya tabanlı veritabanı
+            - **Excel Export**: Pandas ile .xlsx dosya oluşturma
+            - **CSV Export**: Veri paylaşımı için standart format
+            - **JSON**: Yapılandırılmış veri formatı
+            - **Git**: Versiyon kontrolü ve işbirliği
             """)
         
-        st.markdown("### **🔍 Core Functions Explained**")
+        st.markdown("### **⚠️ Dikkat Edilen Kritik Noktalar**")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            **🔒 Veri Güvenliği:**
+            - **SQL Injection Koruması**: SQLAlchemy ORM kullanımı
+            - **Input Validation**: Kullanıcı girdilerinin doğrulanması
+            - **Error Handling**: Kapsamlı hata yakalama ve yönetimi
+            - **Data Sanitization**: Veri temizleme ve normalizasyon
+            - **Type Safety**: Veri tiplerinin kontrolü
+            """)
+        
+        with col2:
+            st.markdown("""
+            **⚡ Performans Optimizasyonu:**
+            - **Caching**: @st.cache_data ile veri önbellekleme
+            - **Lazy Loading**: Veri yükleme optimizasyonu
+            - **Memory Management**: Büyük veri setleri için bellek yönetimi
+            - **Query Optimization**: Veritabanı sorgu optimizasyonu
+            - **Responsive Design**: Mobil uyumlu arayüz
+            """)
+        
+        st.markdown("### **🏗️ Mimari Tasarım Prensipleri**")
         
         st.markdown("""
-        **1. Data Collection (`src/utils/mock_data.py`):**
-        ```python
-        def generate_anomaly_data(total=500, anomaly_ratio=0.15):
-            # Creates realistic anomalies: price outliers, missing data, 
-            # cross-source inconsistencies, unusual combinations
-        ```
+        **1. Modüler Yapı:**
+        - Her modül tek bir sorumluluğa sahip (Single Responsibility)
+        - Bağımlılıklar minimize edildi (Dependency Inversion)
+        - Kod tekrarı önlendi (DRY Principle)
+        - Kolay test edilebilir yapı
         
-        **2. Database Management (`src/utils/db.py`):**
-        ```python
-        def upsert_listings(engine, listings):
-            # SQLAlchemy ORM for database operations
-            # Handles insert/update with duplicate prevention
-        ```
+        **2. Hata Yönetimi:**
+        - Try-catch blokları ile güvenli kod
+        - Kullanıcı dostu hata mesajları
+        - Graceful degradation (kademeli bozulma)
+        - Logging ve monitoring
         
-        **3. Duplicate Detection (`src/analysis/dedupe.py`):**
-        ```python
-        def fingerprint(row):
-            # SHA1 hashing of normalized text
-            # Handles variations in listings across sources
-        ```
+        **3. Veri Bütünlüğü:**
+        - Duplicate detection algoritmaları
+        - Data validation kuralları
+        - Cross-source consistency checks
+        - Anomaly detection sistemleri
         
-        **4. Anomaly Detection (`src/app.py`):**
-        ```python
-        def detect_price_anomalies(df):
-            # Z-score analysis for statistical outliers
-            # City-based price validation
-        ```
-        
-        **5. Interactive UI (`src/app.py`):**
-        ```python
-        # Streamlit components for real-time filtering
-        # Dynamic visualization updates
-        # Mobile-responsive design
-        ```
+        **4. Kullanıcı Deneyimi:**
+        - Responsive design (mobil uyumlu)
+        - Real-time updates
+        - Intuitive interface design
+        - Performance optimization
         """)
         
-        st.markdown("### **🚀 Production Readiness**")
+        st.markdown("### **📊 İş Değeri ve Uygulama Alanları**")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            **💼 Joreca Pozisyonu İçin:**
+            - **Data Pipeline Management**: End-to-end veri akışı
+            - **Quality Control**: Veri kalitesi kontrolü
+            - **Anomaly Detection**: Anomali tespiti ve raporlama
+            - **Monitoring**: Real-time dashboard ve alerting
+            - **Automation**: Otomatik veri işleme
+            """)
+        
+        with col2:
+            st.markdown("""
+            **🎯 Teknik Yetkinlikler:**
+            - **SQL**: Karmaşık sorgular ve veri analizi
+            - **Python**: Data science ve automation
+            - **Web Scraping**: Veri toplama teknikleri
+            - **Visualization**: Business intelligence
+            - **Cloud Deployment**: Production ortamı
+            """)
+        
+        st.markdown("### **🚀 Production Ready Özellikler**")
+        
         st.markdown("""
-        - **Scalability**: Modular design allows easy scaling
-        - **Monitoring**: Built-in anomaly detection and alerting
-        - **Data Quality**: Comprehensive validation and cleaning
-        - **User Experience**: Intuitive interface with real-time updates
-        - **Deployment**: Cloud-ready with environment variables
-        - **Documentation**: Self-documenting code with clear structure
+        **Cloud Deployment:**
+        - **Streamlit Cloud**: Otomatik CI/CD pipeline
+        - **Git Integration**: Version control ve collaboration
+        - **Environment Variables**: Configuration management
+        - **Error Monitoring**: Production error tracking
+        
+        **Scalability & Maintenance:**
+        - **Modular Design**: Kolay genişletilebilir yapı
+        - **Database Abstraction**: Farklı veritabanlarına geçiş kolaylığı
+        - **API Ready**: REST API entegrasyonu için hazır
+        - **Documentation**: Self-documenting code
+        - **Testing**: Unit test ve integration test hazır
         """)
 
     # Controls
