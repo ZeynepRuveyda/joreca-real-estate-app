@@ -356,33 +356,13 @@ def main():
     st.title("Real Estate Explorer (SeLoger vs Leboncoin)")
 
     # Controls
-    col1, col2, col3, col4, col5, col6 = st.columns(6)
+    col1, col2 = st.columns(2)
     with col1:
         min_rows = st.number_input("Min rows", min_value=50, max_value=10000, value=200, step=50)
     with col2:
-        if st.button("Populate to min rows (Mock)"):
-            ensure_min_rows(min_rows)
-            st.success("Dataset populated with mock data.")
-        st.caption("Generate sample data to reach minimum rows")
-    with col3:
-        if st.button("Generate Enhanced Duplicates"):
-            rows = generate_enhanced_duplicates(total=400, duplicate_ratio=0.5)
-            upsert_listings(get_engine(), rows)
-            st.cache_data.clear()
-            st.success(f"Generated {len(rows)} records with 50% duplicates.")
-        st.caption("Generate realistic data with many duplicates")
-    with col4:
-        if st.button("Generate Anomaly Data"):
-            rows = generate_anomaly_data(total=500, anomaly_ratio=0.15)
-            upsert_listings(get_engine(), rows)
-            st.cache_data.clear()
-            st.success(f"Generated {len(rows)} records with 15% anomalies.")
-        st.caption("Generate data with realistic anomalies")
-    with col5:
         if st.button("Reload data"):
             st.cache_data.clear()
         st.caption("Refresh data from database")
-    with col6:
         export_requested = st.button("Export diffs (Excel+CSV)")
         st.caption("Export differences between sources")
 
