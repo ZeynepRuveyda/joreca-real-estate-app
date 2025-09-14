@@ -360,9 +360,6 @@ def main():
     with col1:
         min_rows = st.number_input("Min rows", min_value=50, max_value=10000, value=200, step=50)
     with col2:
-        if st.button("Reload data"):
-            st.cache_data.clear()
-        st.caption("Refresh data from database")
         export_requested = st.button("Export diffs (Excel+CSV)")
         st.caption("Export differences between sources")
 
