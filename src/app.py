@@ -354,6 +354,85 @@ def show_anomaly_dashboard(df):
 
 def main():
     st.title("Real Estate Explorer (SeLoger vs Leboncoin)")
+    
+    # Code Architecture & Technical Details
+    with st.expander("🔧 Code Architecture & Technical Details", expanded=False):
+        st.markdown("### **📋 Project Structure & Technologies**")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.markdown("""
+            **🏗️ Architecture:**
+            - **Data Collection**: Mock data generation (simulates web scraping)
+            - **Database**: SQLite with SQLAlchemy ORM
+            - **Data Processing**: Pandas for data manipulation
+            - **Deduplication**: SHA1 fingerprinting + text normalization
+            - **Anomaly Detection**: Z-score analysis + statistical methods
+            - **Visualization**: Matplotlib + Seaborn
+            - **Web Interface**: Streamlit (responsive design)
+            - **Deployment**: Streamlit Cloud + GitHub
+            """)
+        
+        with col2:
+            st.markdown("""
+            **💻 Key Code Patterns:**
+            - **Modular Design**: Separate modules for DB, analysis, UI
+            - **Error Handling**: Try-catch blocks for robust operation
+            - **Caching**: @st.cache_data for performance optimization
+            - **Data Validation**: Type checking and null handling
+            - **Responsive UI**: CSS media queries for mobile compatibility
+            - **Real-time Updates**: Dynamic filtering and visualization
+            """)
+        
+        st.markdown("### **🔍 Core Functions Explained**")
+        
+        st.markdown("""
+        **1. Data Collection (`src/utils/mock_data.py`):**
+        ```python
+        def generate_anomaly_data(total=500, anomaly_ratio=0.15):
+            # Creates realistic anomalies: price outliers, missing data, 
+            # cross-source inconsistencies, unusual combinations
+        ```
+        
+        **2. Database Management (`src/utils/db.py`):**
+        ```python
+        def upsert_listings(engine, listings):
+            # SQLAlchemy ORM for database operations
+            # Handles insert/update with duplicate prevention
+        ```
+        
+        **3. Duplicate Detection (`src/analysis/dedupe.py`):**
+        ```python
+        def fingerprint(row):
+            # SHA1 hashing of normalized text
+            # Handles variations in listings across sources
+        ```
+        
+        **4. Anomaly Detection (`src/app.py`):**
+        ```python
+        def detect_price_anomalies(df):
+            # Z-score analysis for statistical outliers
+            # City-based price validation
+        ```
+        
+        **5. Interactive UI (`src/app.py`):**
+        ```python
+        # Streamlit components for real-time filtering
+        # Dynamic visualization updates
+        # Mobile-responsive design
+        ```
+        """)
+        
+        st.markdown("### **🚀 Production Readiness**")
+        st.markdown("""
+        - **Scalability**: Modular design allows easy scaling
+        - **Monitoring**: Built-in anomaly detection and alerting
+        - **Data Quality**: Comprehensive validation and cleaning
+        - **User Experience**: Intuitive interface with real-time updates
+        - **Deployment**: Cloud-ready with environment variables
+        - **Documentation**: Self-documenting code with clear structure
+        """)
 
     # Controls
     col1, col2 = st.columns(2)
